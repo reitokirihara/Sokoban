@@ -25,6 +25,8 @@ public class GridManager : MonoBehaviour {
 	public static GridManager instance;
 	public int levelNum;
 
+	public int levelOneBoxCount = 2;
+
 	void Start () {
 		levelNum = 1;
 
@@ -35,13 +37,14 @@ public class GridManager : MonoBehaviour {
 		var camHeight = Camera.main.orthographicSize * 2;
 		var camWidth = camHeight * (16/9);
 		transform.position = new Vector3(-(camWidth - gridSize), -(camHeight - gridSize));
-		//instantiate tiles
+		// instantiate tiles
 		for(int y = gridSize - 1; y >= 0; y--){
 			for(int x = 0; x < gridSize; x++){
 				var tile = Instantiate(tilePrefab, transform.position + new Vector3(x,y,1), Quaternion.identity);
 				tile.transform.parent = transform;
 				tile.GetComponent<Tile>().type = TileType.Empty;
-				tiles[x + y * gridSize] = tile.GetComponent<Tile>();
+				tile.GetComponent<Tile>().setEntity(null);
+				tiles[x + ((gridSize - 1) - y) * gridSize] = tile.GetComponent<Tile>();
 			}
 		}
 		loadLevel();
@@ -58,34 +61,46 @@ public class GridManager : MonoBehaviour {
 		try {
 			using(StreamReader sr = new StreamReader("Assets/Levels/one.lvl")){
 				
+				int row = 0;
+
 				while(!sr.EndOfStream)
 				{
 					String data = sr.ReadLine();
 					String[] line = data.Split(' ');
 					for(int i = 0; i < line.Length; i++) {
 						switch(line[i]){
+							case "0":
+								break;
 							case "1":
 								//instantiate whatever
-								var player = Instantiate(playerPrefab, transform.position + new Vector3(i%gridSize, (int)i/gridSize), Quaternion.identity);
+								var player = Instantiate(playerPrefab, transform.position + new Vector3(i%gridSize, (int)((row * 5) + i)/gridSize), Quaternion.identity);
 								player.transform.parent = transform;
+								// tiles[row * gridSize + i].setEntity(player);
 							//player
 								break;
 							case "2":
-								var box = Instantiate(BoxPrefab, transform.position + new Vector3(i%gridSize, (int)i/gridSize), Quaternion.identity);
+								var box = Instantiate(BoxPrefab, transform.position + new Vector3(i%gridSize, (int)((row * 5) + i)/gridSize), Quaternion.identity);
 								box.transform.parent = transform;
+								tiles[row * gridSize + i].setEntity(box);
 								break;
 							case "3":
-								var target = Instantiate(TargetPrefab, transform.position + new Vector3(i%gridSize, (int)i/gridSize), Quaternion.identity);
+								var target = Instantiate(TargetPrefab, transform.position + new Vector3(i%gridSize, (int)((row * 5) + i)/gridSize), Quaternion.identity);
 								target.transform.parent = transform;
+								target.GetComponent<Tile>().type = TileType.Target;
+								tiles[row * gridSize + i] = target.GetComponent<Tile>();
 								break;
 							case "4":
-								var wall = Instantiate(WallPrefab, transform.position + new Vector3(i%gridSize, (int)i/gridSize), Quaternion.identity);
+								var wall = Instantiate(WallPrefab, transform.position + new Vector3(i%gridSize, (int)((row * 5) + i)/gridSize), Quaternion.identity);
 								wall.transform.parent = transform;
+								// wall.GetComponent<Tile>().type = TileType.Solid;
+								tiles[row * gridSize + i] = wall.GetComponent<Tile>();
+								//tiles[row * gridSize + i].entity = wall;
 								break;
 							default:
 								break;
 						}
 					}
+					row += 1;
 				}
 			}
 		} catch(Exception e) {
@@ -108,10 +123,18 @@ public class GridManager : MonoBehaviour {
 	}
 
 	public GameObject GetObjectAtTile(Vector2Int pos){
-		return tiles[pos.x + pos.y * gridSize].GetComponent<Tile>().entity;
+		return tiles[pos.x + pos.y * gridSize].GetComponent<Tile>().getEntity();
 	}
 
 	public bool isEmptyAt(Vector2Int pos){
 		return tiles[pos.x + pos.y * gridSize].GetComponent<Tile>().isEmpty();
+	}
+
+	public bool isSolidAt(Vector2Int pos){
+		return tiles[pos.x + pos.y * gridSize].GetComponent<Tile>().type == TileType.Solid;
+	}
+
+	public TileType tileTypeAt(Vector2Int pos){
+		return tiles[pos.x + pos.y * gridSize].GetComponent<Tile>().type;
 	}
 }

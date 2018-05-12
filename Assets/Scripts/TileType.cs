@@ -2,5 +2,7 @@
 public enum TileType{
 		Empty,
 		Player,
-		Box
+		Box,
+		Solid,
+		Target
 	}
